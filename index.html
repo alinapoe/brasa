@@ -373,8 +373,25 @@
 <div id="app">
   <div id="toast" class="toast"></div>
 
+  <!-- ===== PANTALLA: REGISTRO (primera vez) ===== -->
+  <div class="screen" id="s-register">
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <span class="flame" style="font-size:40px;">🔥</span>
+      <div style="text-align:center; margin: 16px 0 40px;">
+        <div class="logo">brasa</div>
+        <div class="tagline">antes de empezar, ¿cómo te llamamos?</div>
+      </div>
+      <input type="text" id="register-name" placeholder="tu nombre o como quieras que te conozcan..." maxlength="30" style="margin-bottom:8px;" />
+      <div class="error-msg" id="register-error">Escribí un nombre para continuar.</div>
+      <div style="font-size:11px; color:var(--text3); margin-top:10px; margin-bottom:28px; line-height:1.6;">
+        Este nombre te va a identificar en brasa. Solo te lo preguntamos una vez.
+      </div>
+      <button class="btn btn-primary" onclick="registerUser()">entrar a brasa 🔥</button>
+    </div>
+  </div>
+
   <!-- ===== PANTALLA: BIENVENIDA ===== -->
-  <div class="screen active" id="s-welcome">
+  <div class="screen" id="s-welcome">
     <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
       <span class="flame">🔥</span>
       <div style="text-align:center; margin: 16px 0 48px;">
@@ -764,28 +781,6 @@
     document.getElementById('tab-sent').style.display = tabId === 'tab-sent' ? 'block' : 'none';
   }
 
-  // ── CHECK FOR INCOMING LINK ──
-  async function checkIncomingLink() {
-    const params = new URLSearchParams(window.location.search);
-    const linkId = params.get('r');
-    if (!linkId) return false;
-
-    try {
-      const q = query(collection(db, 'anecdotes'), where('linkId', '==', linkId));
-      const snap = await getDocs(q);
-      if (snap.empty) return false;
-
-      const data = snap.docs[0].data();
-      document.getElementById('teaser-from').textContent = `${data.fromUserName} te mandó una brasa`;
-      document.getElementById('teaser-prompt-preview').textContent = `"${data.prompt}"`;
-      document.getElementById('teaser-text-preview').textContent =
-        data.text.substring(0, 60) + '...';
-
-      go('s-teaser');
-      return true;
-    } catch(e) { console.error(e); return false; }
-  }
-
   // ── DRAW CONSTELLATION ──
   window.drawConstellation = function() {
     const canvas = document.getElementById('constellation-canvas');
@@ -858,9 +853,64 @@
     }
   }
 
+  // ── REGISTER USER ──
+  window.registerUser = function() {
+    const nameInput = document.getElementById('register-name').value.trim();
+    const err = document.getElementById('register-error');
+    if (!nameInput) { err.classList.add('visible'); return; }
+    err.classList.remove('visible');
+    const id = randomId(12);
+    localStorage.setItem('brasa_user_id', id);
+    localStorage.setItem('brasa_user_name', nameInput);
+    state.userId = id;
+    state.userName = nameInput;
+    go('s-welcome');
+  }
+
   // ── INIT ──
-  getOrCreateUser();
-  checkIncomingLink();
+  async function init() {
+    const id = localStorage.getItem('brasa_user_id');
+    const name = localStorage.getItem('brasa_user_name');
+    if (id && name) {
+      state.userId = id;
+      state.userName = name;
+      const hasIncoming = await checkIncomingLink();
+      if (!hasIncoming) go('s-welcome');
+    } else {
+      // Check if arriving via a link — show register first, then teaser
+      const params = new URLSearchParams(window.location.search);
+      const linkId = params.get('r');
+      if (linkId) {
+        // Store linkId so after register we show the teaser
+        window.pendingLinkId = linkId;
+      }
+      go('s-register');
+    }
+  }
+
+  // ── CHECK FOR INCOMING LINK ──
+  async function checkIncomingLink() {
+    const params = new URLSearchParams(window.location.search);
+    const linkId = params.get('r') || window.pendingLinkId;
+    window.pendingLinkId = null;
+    if (!linkId) return false;
+
+    try {
+      const q = query(collection(db, 'anecdotes'), where('linkId', '==', linkId));
+      const snap = await getDocs(q);
+      if (snap.empty) return false;
+
+      const data = snap.docs[0].data();
+      document.getElementById('teaser-from').textContent = data.fromUserName + ' te mandó una brasa';
+      document.getElementById('teaser-prompt-preview').textContent = '"' + data.prompt + '"';
+      document.getElementById('teaser-text-preview').textContent = data.text.substring(0, 60) + '...';
+
+      go('s-teaser');
+      return true;
+    } catch(e) { console.error(e); return false; }
+  }
+
+  init();
 </script>
 </body>
 </html>
