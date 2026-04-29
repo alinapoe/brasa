@@ -397,11 +397,10 @@
 
     <div id="person-chips" style="margin-bottom:16px;"></div>
 
-    <input type="text" id="new-person-name" placeholder="nombre de la persona..." style="margin-bottom:8px;" />
-    <input type="email" id="new-person-email" placeholder="su mail o número (para mandarle el link)..." />
+    <input type="text" id="new-person-name" placeholder="nombre de la persona..." />
     <div class="error-msg" id="person-error">Ingresá al menos el nombre de la persona.</div>
 
-    <div class="screen-sub" style="font-size:11px; margin-top:8px; margin-bottom:0;">Si no está en brasa todavía, le va a llegar un link para sumarse.</div>
+    <div class="screen-sub" style="font-size:11px; margin-top:10px; margin-bottom:0;">El juego va a generar un link único que vos le mandás por donde quieras — WhatsApp, mail, Instagram, lo que uses.</div>
 
     <div class="spacer"></div>
     <button class="btn btn-primary" onclick="confirmPerson()">siguiente →</button>
@@ -459,13 +458,13 @@
     <textarea id="anecdote-text" rows="8"
       placeholder="Contalo como quieras. No tiene que ser perfecto. Podés usar emojis 🔥"
       oninput="updateWordCount(this)"></textarea>
-    <div class="word-count" id="wc">0 / 80 palabras</div>
+    <div class="word-count" id="wc">0 / 120 palabras</div>
 
     <div style="margin: 16px 0;">
       <input type="text" id="keyword" placeholder="una palabra que lo resuma... (ej: 'lluvia', 'ese jueves')" />
     </div>
 
-    <div class="error-msg" id="write-error">Escribí al menos 10 palabras para continuar.</div>
+    <div class="error-msg" id="write-error">Escribí al menos 40 palabras para continuar.</div>
 
     <div class="spacer"></div>
     <button class="btn btn-primary" id="send-btn" onclick="sendAnecdote()">mandar la brasa 🔥</button>
@@ -496,7 +495,7 @@
       <div style="text-align:center; margin-bottom:32px;">
         <span class="flame" style="font-size:40px;">🔥</span>
         <div class="screen-title" style="margin-top:16px;" id="teaser-from"></div>
-        <div class="screen-sub" id="teaser-sub">te guardó un recuerdo.</div>
+        <div class="screen-sub" id="teaser-sub">escribió algo para vos.</div>
       </div>
 
       <div class="card" style="margin-bottom:24px;">
@@ -635,12 +634,10 @@
     el.classList.add('selected');
     state.selectedPerson = { name, fromChip: true };
     document.getElementById('new-person-name').value = '';
-    document.getElementById('new-person-email').value = '';
   }
 
   window.confirmPerson = function() {
     const nameInput = document.getElementById('new-person-name').value.trim();
-    const emailInput = document.getElementById('new-person-email').value.trim();
     const err = document.getElementById('person-error');
 
     if (!state.selectedPerson && !nameInput) {
@@ -649,7 +646,7 @@
     err.classList.remove('visible');
 
     if (nameInput) {
-      state.selectedPerson = { name: nameInput, contact: emailInput };
+      state.selectedPerson = { name: nameInput };
     }
     go('s-write-prompt');
   }
@@ -665,8 +662,8 @@
   window.updateWordCount = function(el) {
     const words = el.value.trim() === '' ? 0 : el.value.trim().split(/\s+/).length;
     const wc = document.getElementById('wc');
-    wc.textContent = `${words} / 80 palabras`;
-    wc.className = 'word-count' + (words > 80 ? ' over' : words >= 30 ? ' ok' : '');
+    wc.textContent = `${words} / 120 palabras`;
+    wc.className = 'word-count' + (words > 120 ? ' over' : words >= 40 ? ' ok' : '');
   }
 
   // ── SEND ANECDOTE ──
@@ -677,7 +674,7 @@
     const btn = document.getElementById('send-btn');
 
     const wordCount = text === '' ? 0 : text.split(/\s+/).length;
-    if (wordCount < 10) { err.classList.add('visible'); return; }
+    if (wordCount < 40) { err.classList.add('visible'); return; }
     err.classList.remove('visible');
 
     btn.innerHTML = '<span class="loading-spinner"></span>mandando...';
@@ -779,7 +776,7 @@
       if (snap.empty) return false;
 
       const data = snap.docs[0].data();
-      document.getElementById('teaser-from').textContent = `${data.fromUserName} te guardó una brasa`;
+      document.getElementById('teaser-from').textContent = `${data.fromUserName} te mandó una brasa`;
       document.getElementById('teaser-prompt-preview').textContent = `"${data.prompt}"`;
       document.getElementById('teaser-text-preview').textContent =
         data.text.substring(0, 60) + '...';
